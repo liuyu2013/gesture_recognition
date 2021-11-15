@@ -2,20 +2,23 @@ import suanpan
 from flask import Flask, request, render_template
 from suanpan import g
 from suanpan.app import app
+from suanpan.log import logger
 from suanpan.utils import json
 from suanpan.storage import storage
 from suanpan.app.arguments import String, Json
 
 
 def saveParams(params):
-    paramsFileKey = storage.getKeyInNodeConfigsStore("params.json")
-    paramsFilePath = storage.getPathInNodeConfigsStore("params.json")
+    paramsFileKey = storage.getKeyInNodeConfigsStore("saved.json")
+    paramsFilePath = storage.getPathInNodeConfigsStore("saved.json")
     json.dump(params, paramsFilePath)
     storage.upload(paramsFileKey, paramsFilePath)
 
 
 def loadParams():
-    paramsFilePath = storage.getPathInNodeConfigsStore("params.json")
+    paramsFileKey = storage.getKeyInNodeConfigsStore("saved.json")
+    paramsFilePath = storage.getPathInNodeConfigsStore("saved.json")
+    storage.download(paramsFileKey, paramsFilePath)
     return json.load(paramsFilePath)
 
 
@@ -26,6 +29,9 @@ def create_app():
     # a simple page that says hello
     @web.route('/')
     def hello():
+        p = {'example': 'hello', 'tmpValue': 2}
+        saveParams(p)
+        g.params = p
         return render_template('pure.html')
 
     @web.route('/tmp_param', methods=['POST'])
@@ -51,7 +57,7 @@ def runFlask():
 def afterInit(context):
     try:
         # 从oss读取保存的参数配置
-        params = loadParams()
+        g.params = loadParams()
     except:
         pass
 
@@ -64,6 +70,8 @@ def afterInit(context):
 @app.output(Json(key="outputData1", alias="result"))
 def hello_world(context):
     args = context.args
+    logger.info(f'hello world {args}')
+    logger.info(f'hello paramse {g.params}')
     return f'Hello World, {args.prefix} {args.user_text}!'
 
 

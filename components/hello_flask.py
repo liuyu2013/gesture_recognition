@@ -9,6 +9,7 @@ from suanpan.app.arguments import String, Json
 
 
 def saveParams(params):
+    # 将输入参数保存到 oss
     paramsFileKey = storage.getKeyInNodeConfigsStore("saved.json")
     paramsFilePath = storage.getPathInNodeConfigsStore("saved.json")
     json.dump(params, paramsFilePath)
@@ -16,6 +17,7 @@ def saveParams(params):
 
 
 def loadParams():
+    # 从 oss 中读取参数
     paramsFileKey = storage.getKeyInNodeConfigsStore("saved.json")
     paramsFilePath = storage.getPathInNodeConfigsStore("saved.json")
     storage.download(paramsFileKey, paramsFilePath)
@@ -29,35 +31,37 @@ def create_app():
     # a simple page that says hello
     @web.route('/')
     def hello():
-        p = {'example': 'hello', 'tmpValue': 2}
-        saveParams(p)
-        g.params = p
         return render_template('pure.html')
 
-    @web.route('/tmp_param', methods=['POST'])
-    def tmp_param():
-        # 存储临时变量到 g，可以和消息事件共享
-        g.someParameter = 'a'
-
-    @web.route('/storage_param', methods=['POST'])
-    def storage_param():
-        # 存储配置到oss，组件重启之后可以load
+    # set some parameters and save to oss
+    @web.route('/params', methods=['POST'])
+    def params():
         params = request.get_json()
+        logger.info(f'set new params: {params}')
+
+        # 存储配置到oss，组件重启之后可以load
         saveParams(params)
+
+        # 存储临时变量到 g，可以和消息事件共享
+        g.someParameter = params
+
+        return {'message': 'ok', 'code': 0}
 
     return web
 
 
 def runFlask():
+    # 初始化一个 flask
     web = create_app()
+    # flask 由 suanpan app 加载
     app._stream.sioLoop.setWebApp(web)
 
 
 @app.afterInit
 def afterInit(context):
     try:
-        # 从oss读取保存的参数配置
-        g.params = loadParams()
+        # 组件初始化，从oss读取保存的参数配置
+        g.someParameter = loadParams()
     except:
         pass
 
@@ -68,11 +72,11 @@ def afterInit(context):
 @app.input(Json(key="inputData1", alias="user_text", default="Suanpan"))
 @app.param(String(key="param_prefix", alias="prefix"))
 @app.output(Json(key="outputData1", alias="result"))
-def hello_world(context):
+def hello_flask(context):
     args = context.args
-    logger.info(f'hello world {args}')
-    logger.info(f'hello paramse {g.params}')
-    return f'Hello World, {args.prefix} {args.user_text}!'
+    logger.info(f'hello flask {args}')
+    logger.info(f'hello paramse {g.someParameter}')
+    return f'Hello Flask, {args.prefix} {args.user_text} {g.someParameter}!'
 
 
 if __name__ == "__main__":

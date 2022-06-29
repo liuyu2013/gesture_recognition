@@ -129,3 +129,5 @@ dmypy.json
 .pyre/
 .idea/
 .vscode/
+ly_test
+test.py

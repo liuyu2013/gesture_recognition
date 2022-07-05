@@ -4,7 +4,6 @@ from ast import arg
 import cv2
 from matplotlib.cbook import pts_to_midstep
 import numpy as np
-from cvzone.HandTrackingModule import HandDetector  # 导入手部检测模块
 import math
 import random
 import mediapipe as mp
@@ -40,7 +39,7 @@ def control_volume(context):
 
     #是否需要保存该视频
     #定义编解码器并创建VideoWriter对象
-    is_save_video = False if args.param5 is None else True
+    is_save_video = args.param5 if args.param5 is not None else False
     max_num_hands = args.param3 if args.param3 is not None else 1
     min_detection_confidence = args.param4 if args.param4 is not None else 0.8
 
@@ -113,7 +112,9 @@ def control_volume(context):
     # 释放视频资源
     cap.release()
     cv2.destroyAllWindows() 
-    
+    result = args.save_path if is_save_video else "success"
+    app.send({"out1":result})
+
 if __name__ == "__main__":
     suanpan.run(app)
     # control_volume("")

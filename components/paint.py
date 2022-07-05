@@ -1,3 +1,4 @@
+from unittest import result
 from attr import s
 import mediapipe as mp
 import cv2
@@ -8,7 +9,7 @@ from suanpan.app import app
 from suanpan.app.arguments import String, Json, Int, Float, Bool
 from suanpan.log import logger
 
-from components.until.paint_function import getTool, index_raised
+from util.paint_function import getTool, index_raised
 
 @app.input(String(key="inputData1", alias="msgin", default="Suanpan"))
 @app.param(Int(key="param0", alias="camera"))
@@ -34,7 +35,7 @@ def paint(context):
 
     # 是否需要保存该视频
     # 定义编解码器并创建VideoWriter对象
-	is_save_video = False if args.param5 is None else True
+	is_save_video = args.param5 if args.param5 is not None else False
 	max_num_hands = args.param3 if args.param3 is not None else 1
 	min_detection_confidence = args.param4 if args.param4 is not None else 0.8
 
@@ -58,7 +59,7 @@ def paint(context):
 	thick = 4
 	prevx, prevy = 0,0
 
-	tools = cv2.imread("tools.png")
+	tools = cv2.imread("util/tools.png")
 	tools = tools.astype('uint8')
 
 	mask = np.ones((h,w))*255
@@ -180,6 +181,8 @@ def paint(context):
 			break
 	cv2.destroyAllWindows()
 	cap.release()
+	result = args.save_path if is_save_video else "success"
+	app.send({"out1":result})
 
 if __name__ == "__main__":
 	suanpan.run(app)

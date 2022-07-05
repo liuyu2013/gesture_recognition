@@ -1,4 +1,7 @@
+python3.8 
 suanpan-core>=0.16.8
 flask>=2.0.2
 sympy 
 scipy==1.6.1
+opencv-python
+autopy
